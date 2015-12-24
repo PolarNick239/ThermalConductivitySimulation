@@ -19,6 +19,7 @@ setup(
         'pyopencl>=2015.2.3',
         'cyglfw3>=3.1.0.2',
         'Pillow>=3.0.0',
+        'scipy>=0.16.0',
     ],
     scripts=[
         "simulation_app.py",

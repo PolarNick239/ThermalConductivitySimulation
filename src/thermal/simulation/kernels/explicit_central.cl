@@ -1,13 +1,14 @@
 #line 1
 
-__kernel void iterate(__global const float * ts,
-                      __global       float * ts_res,
-                                     float dx,
-                                     float dt,
-                                     float u,
-                                     float chi,
-                                     int n
-                      ) {
+__kernel void solve(__global const float * ts,
+                    __global       float * ts_res,
+                                   float dx,
+                                   float dt,
+                                   float u,
+                                   float chi,
+                                   int iters,
+                                   int n
+                    ) {
     int i = (int) get_global_id(0);
     float s = u * dt / dx;
     float r = chi * dt / (dx * dx);
@@ -17,5 +18,7 @@ __kernel void iterate(__global const float * ts,
         return;
     }
 
-    ts_res[i] = ts[i] * (1 - 2 * r) + (r - s / 2.0f) * ts[i + 1] + (r + s / 2.0f) * ts[i - 1];
+    for (int iter = 0; iter < iters; ++iter) {
+        ts_res[i] = ts[i] * (1 - 2 * r) + (r - s / 2.0f) * ts[i + 1] + (r + s / 2.0f) * ts[i - 1];
+    }
 }

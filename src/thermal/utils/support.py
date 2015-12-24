@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import functools
+import numpy as np
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -54,3 +55,13 @@ def wrap_exc(coro_or_future, logger_for_error=None, future_description: str=None
 
     future = asyncio.ensure_future(coro_or_future)
     future.add_done_callback(check_for_exceptions)
+
+
+def np_the_same(n, x, dtype):
+    """
+    >>> np_the_same(5, 1, np.float32)
+    array([ 1.,  1.,  1.,  1.,  1.], dtype=float32)
+    """
+    xs = np.empty(n, dtype)
+    xs.fill(x)
+    return xs

@@ -3,13 +3,16 @@
 # All rights reserved.
 #
 
-
+import sys
 import logging
+
+import itertools
 import numpy as np
 import pkg_resources
 import pyopencl as cl
 import pyopencl.array
 from pathlib import Path
+from importlib import import_module
 
 from thermal.utils.cl import create_context
 
@@ -23,7 +26,8 @@ class SimulationProcessor:
 
     def __init__(self, cl_context: cl.Context=None, kernels_cache_dir=None):
         self._context = cl_context
-        self._programs = {}
+        self._cl_methods = {}
+        self._py_methods = {}
         self._kernels_cache_dir = kernels_cache_dir
 
         self.compiled = False
@@ -32,37 +36,53 @@ class SimulationProcessor:
         self._context = self._context or create_context()
         logger.debug('Compiling OpenCL kernels for SimulationProcessor...')
 
-        common_code_path = kernels_path / 'common.cl'
-        with common_code_path.open() as f:
-            common_code = f.readlines()
-
-        for cl_file in kernels_path.glob("**/*.cl"):
-            if cl_file == common_code_path:
-                continue
-
+        for cl_file in kernels_path.glob("*.cl"):
             name = cl_file.name.split(".")[0]
             with cl_file.open() as f:
                 source_code = f.readlines()
 
             logger.debug('Building kernels for \'{}\'...'.format(name))
-            self._programs[name] = cl.Program(self._context, ''.join(common_code + source_code))\
-                .build(cache_dir=self._kernels_cache_dir)
+            self._cl_methods[name] = cl.Program(self._context, ''.join(source_code)).build(cache_dir=self._kernels_cache_dir)
+        logger.debug('OpenCL kernels for SimulationProcessor compiled: {}!'.format(sorted(self._cl_methods.keys())))
+
+        for py_file in kernels_path.glob("*.py"):
+            if py_file.name.startswith("_"):
+                continue
+
+            name = py_file.name.split('.')[0]
+            package = sys.modules[__name__]
+            kernel_module = import_module('..kernels.{}'.format(name), package.__name__)
+            solve = getattr(kernel_module, 'solve')
+            self._py_methods[name] = solve
+        logger.debug('Python kernels for SimulationProcessor imported: {}!'.format(sorted(self._py_methods.keys())))
+
+        for name in self._cl_methods.keys():
+            assert name not in self._py_methods.keys()
+        for name in self._py_methods.keys():
+            assert name not in self._cl_methods.keys()
 
         self.compiled = True
-        logger.debug('OpenCL kernels for SimulationProcessor compiled: {}!'.format(self.get_method_names()))
 
     def process(self, ts,
                 *, dx, dt, u, chi,
                 iters=1, method_name: str) -> cl.array.Array:
+        n, iter_dt = len(ts), dt / iters
+
+        if method_name in self._py_methods:
+            solve = self._py_methods[method_name]
+            ts_res = solve(ts, dx, dt / iters, u, chi, iters)
+            return ts_res
+
         if not self.compiled:
             self.compile()
 
-        program = self._programs[method_name]
+        program = self._cl_methods[method_name]
         queue = cl.CommandQueue(self._context)
 
-        n = len(ts)
-        dx, dt, u, chi = map(np.float32, [dx, dt, u, chi])
-        n = np.int32(n)
+        dx, dt, iter_dt, u, chi = map(np.float32, [dx, dt, iter_dt, u, chi])
+        iters, n = map(np.int32, [iters, n])
+
+        iter_dt = np.float32(dt / iters)
 
         if isinstance(ts, cl.array.Array):
             ts_cl = ts
@@ -71,19 +91,16 @@ class SimulationProcessor:
             ts_cl = cl.array.to_device(queue, ts)
         ts_res_cl = cl.array.zeros(queue, n, np.float32)
 
-        dt_iter = np.float32(dt / n)
-        for i in range(iters):
-            program.iterate(queue, (n,), None,
-                            ts_cl.data, ts_res_cl.data,
-                            dx, dt_iter, u, chi,
-                            n)
-            ts_cl, ts_res_cl = ts_res_cl, ts_cl
+        program.solve(queue, (n,), None,
+                      ts_cl.data, ts_res_cl.data,
+                      dx, iter_dt, u, chi,
+                      iters, n)
 
-        ts_res = ts_cl.get()
+        ts_res = ts_res_cl.get()
         return ts_res
 
     def get_method_names(self):
         if not self.compiled:
             self.compile()
 
-        return sorted(self._programs.keys())
+        return sorted(itertools.chain(self._cl_methods.keys(), self._py_methods.keys()))
