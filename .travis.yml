@@ -8,15 +8,17 @@ python:
 
 before_install:
  - sudo apt-get build-dep -qq python-numpy python-scipy python-opengl
+ - sudo apt-get install fglrx
 
 addons:
   apt:
     packages:
       # For OpenCL CPU driver:
-      - fglrx
+      # - fglrx # see before_install
       - opencl-headers
       # For GUI and OpenGL context:
       - libglfw3
+      - libglfw3-dev
       - libgl1-mesa-dev
 
 install:

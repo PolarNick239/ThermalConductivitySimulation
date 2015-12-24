@@ -4,10 +4,8 @@ from scipy.linalg import solve_banded
 from thermal.utils import support
 
 
-def solve(ts, dx, dt, u, chi, iters):
+def solve(ts, s, r, dx, dt, u, chi, iters):
     n = len(ts)
-    s = u * dt / dx
-    r = chi * dt / (dx * dx)
 
     lower_diag = support.np_the_same(n, -r, np.float32)
     diag = support.np_the_same(n, (1 - s + 2 * r), np.float32)

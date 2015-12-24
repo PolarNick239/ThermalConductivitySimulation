@@ -102,10 +102,10 @@ class SimulationApp:
             self._tics_limiter = FPSLimiter(1 / self._params['view_dt'])
 
             while not self._should_restart:
+                if self._paused is not None:
+                    yield from self._paused
                 ts = yield from self._cpu_executor.map(self._processor.process, ts, dx=dx, dt=dt, u=u, chi=chi,
                                                        method_name=self._method_name, iters=iters)
                 self._plotter.set_ys(ts)
-                if self._paused is not None:
-                    yield from self._paused
                 yield from self._tics_limiter.ensure_frame_limit()
                 # print('{:.1f} FPS'.format(tics_limiter.get_fps()))

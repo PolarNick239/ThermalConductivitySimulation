@@ -5,7 +5,6 @@
 
 import sys
 import logging
-
 import itertools
 import numpy as np
 import pkg_resources
@@ -64,13 +63,17 @@ class SimulationProcessor:
         self.compiled = True
 
     def process(self, ts,
-                *, dx, dt, u, chi,
+                *, dx, dt, u, chi, s=None, r=None,
                 iters=1, method_name: str) -> cl.array.Array:
         n, iter_dt = len(ts), dt / iters
+        if s is None:
+            s = u * dt / dx
+        if r is None:
+            r = chi * dt / (dx * dx)
 
         if method_name in self._py_methods:
             solve = self._py_methods[method_name]
-            ts_res = solve(ts, dx, dt / iters, u, chi, iters)
+            ts_res = solve(ts, s, r, dx, dt / iters, u, chi, iters)
             return ts_res
 
         if not self.compiled:
@@ -79,7 +82,7 @@ class SimulationProcessor:
         program = self._cl_methods[method_name]
         queue = cl.CommandQueue(self._context)
 
-        dx, dt, iter_dt, u, chi = map(np.float32, [dx, dt, iter_dt, u, chi])
+        s, r, dx, dt, iter_dt, u, chi = map(np.float32, [s, r, dx, dt, iter_dt, u, chi])
         iters, n = map(np.int32, [iters, n])
 
         iter_dt = np.float32(dt / iters)
@@ -93,7 +96,7 @@ class SimulationProcessor:
 
         program.solve(queue, (n,), None,
                       ts_cl.data, ts_res_cl.data,
-                      dx, iter_dt, u, chi,
+                      s, r, dx, iter_dt, u, chi,
                       iters, n)
 
         ts_res = ts_res_cl.get()

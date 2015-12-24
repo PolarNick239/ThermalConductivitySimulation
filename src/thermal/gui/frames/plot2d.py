@@ -105,7 +105,7 @@ class Plot2D(Frame2D):
         with self._plotting_shader:
             self._plotting_shader.uniform_matrix_f('to_world_mtx', to_world_mtx)
             self._plotting_shader.uniform_f('y_range', (y_min, y_max))
-            self._plotting_shader.uniform_f('line_width', 50.0 / self._height)
+            self._plotting_shader.uniform_f('line_width', 40.0 / self._height)
             self._plotting_shader.bind_textures(ys_tex=self._ys_texture, colormap_tex=self._heat_map_texture)
 
             screen_position = np.array([[-1.0, -1.0], [1.0, -1.0], [-1.0, 1.0], [1.0, 1.0]], np.float32)

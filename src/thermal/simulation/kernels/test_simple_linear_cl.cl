@@ -2,6 +2,8 @@
 
 __kernel void solve(__global const float * ts,
                     __global       float * ts_res,
+                                   float s,
+                                   float r,
                                    float dx,
                                    float dt,
                                    float u,
@@ -10,7 +12,6 @@ __kernel void solve(__global const float * ts,
                                    int n
                     ) {
     int i = (int) get_global_id(0);
-
     if (i == 0 || i == n - 1) {
         ts_res[i] = ts[i];
         return;

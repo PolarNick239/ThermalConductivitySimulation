@@ -19,8 +19,9 @@ def _main():
     initial_function = 'step_function'
     method = 'explicit_central'
     params = dict(n=100, iters=10,
-                  dx=0.01, dt=0.1, u=0.0, chi=0.0025,
-                  view_dt=0.05)
+                  dx=0.01, dt=0.01, u=0.0, chi=0.0025,
+                  view_dt=0.05,
+                  r='', s='')
 
     processor = SimulationProcessor()
     simulation = SimulationApp(processor)

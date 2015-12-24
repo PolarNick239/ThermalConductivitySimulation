@@ -20,6 +20,7 @@ class SimulationAppControl:
                  title='SimulationAppControl',
                  **kwargs):
         self._int_param_names = ['n', 'iters']
+        self._optional_float_param_names = ['r', 's']
         self._float_param_names = ['dx', 'dt', 'u', 'chi', 'view_dt']
         self._entries = {}
 
@@ -43,7 +44,7 @@ class SimulationAppControl:
 
         tkinter.Label(self._master, text="Params:").grid(row=2)
         row_num = 3
-        for name in self._int_param_names + self._float_param_names:
+        for name in self._int_param_names + self._float_param_names + self._optional_float_param_names:
             tkinter.Label(self._master, text="{}".format(name)).grid(row=row_num)
             self._entries[name] = tkinter.Entry(self._master)
             self._entries[name].grid(row=row_num, column=1)
@@ -51,10 +52,14 @@ class SimulationAppControl:
 
         for name, value in kwargs.items():
             self._entries[name].insert(0, str(value))
+            assert name in self._int_param_names + self._float_param_names + self._optional_float_param_names
 
-        self._ok_button = tkinter.Button(self._master, text='Ok', command=self._on_ok)
+        self._ok_button = tkinter.Button(self._master, text='Restart', command=self._on_ok)
         self._ok_button.grid(row=row_num, column=1)
         self._on_ok_callbacks = set()
+
+        row_num += 1
+        tkinter.Label(self._master, text="Press SPACE on main window to (un)pause").grid(row=row_num, columnspan=2)
 
     def get_initial_function_name(self):
         return self._initial_function_entry.get()
@@ -79,6 +84,19 @@ class SimulationAppControl:
             except ValueError:
                 logger.warn('Incorrect input in float {}!'.format(param_name))
                 tkinter.messagebox.showwarning('Incorrect input', message='{} should be float!'.format(param_name))
+                self._entries[param_name].selection_from(0)
+                self._entries[param_name].selection_to(tkinter.END)
+                return None
+        for param_name in self._optional_float_param_names:
+            try:
+                value = self._entries[param_name].get()
+                if len(value) == 0:
+                    values[param_name] = None
+                else:
+                    values[param_name] = float(value)
+            except ValueError:
+                logger.warn('Incorrect input in float {}!'.format(param_name))
+                tkinter.messagebox.showwarning('Incorrect input', message='{} should be float or empty!'.format(param_name))
                 self._entries[param_name].selection_from(0)
                 self._entries[param_name].selection_to(tkinter.END)
                 return None
