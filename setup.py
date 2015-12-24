@@ -22,6 +22,6 @@ setup(
         'scipy>=0.16.0',
     ],
     scripts=[
-        "main.py",
+        "src/thermal/main.py",
     ],
 )
