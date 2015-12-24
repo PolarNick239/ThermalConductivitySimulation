@@ -1,0 +1,24 @@
+os:
+  - linux
+
+language: python
+python:
+  - "3.4"
+  - "3.5"
+
+before_install:
+ - sudo apt-get build-dep -qq python-numpy python-scipy python-opengl python-opencl
+
+addons:
+  apt:
+    packages:
+      # For OpenCL CPU driver:
+      - fglrx
+      # For GUI and OpenGL context:
+      - libglfw3
+      - libgl1-mesa-dev
+
+install:
+  - pip install .
+
+script: nosetests
