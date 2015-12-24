@@ -4,10 +4,13 @@
 #
 
 import asyncio
+import logging
 import tkinter
 from tkinter import messagebox
 
 from thermal.utils.support import AsyncExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class SimulationAppControl:
@@ -16,8 +19,8 @@ class SimulationAppControl:
                  *, initial_functions, methods, initial_function=None, method=None,
                  title='SimulationAppControl',
                  **kwargs):
-        self._int_param_names = ['n']
-        self._float_param_names = ['dx', 'dt', 'u', 'chi']
+        self._int_param_names = ['n', 'iters']
+        self._float_param_names = ['dx', 'dt', 'u', 'chi', 'view_dt']
         self._entries = {}
 
         self._master = tkinter.Tk(className=title)
@@ -49,7 +52,7 @@ class SimulationAppControl:
         for name, value in kwargs.items():
             self._entries[name].insert(0, str(value))
 
-        self._ok_button = tkinter.Button(self._master, text='Ok', command = self._on_ok)
+        self._ok_button = tkinter.Button(self._master, text='Ok', command=self._on_ok)
         self._ok_button.grid(row=row_num, column=1)
         self._on_ok_callbacks = set()
 
@@ -65,6 +68,7 @@ class SimulationAppControl:
             try:
                 values[param_name] = int(self._entries[param_name].get())
             except ValueError:
+                logger.warn('Incorrect input in int {}!'.format(param_name))
                 tkinter.messagebox.showwarning('Incorrect input', message='{} should be integer!'.format(param_name))
                 self._entries[param_name].selection_from(0)
                 self._entries[param_name].selection_to(tkinter.END)
@@ -73,6 +77,7 @@ class SimulationAppControl:
             try:
                 values[param_name] = float(self._entries[param_name].get())
             except ValueError:
+                logger.warn('Incorrect input in float {}!'.format(param_name))
                 tkinter.messagebox.showwarning('Incorrect input', message='{} should be float!'.format(param_name))
                 self._entries[param_name].selection_from(0)
                 self._entries[param_name].selection_to(tkinter.END)
@@ -80,18 +85,27 @@ class SimulationAppControl:
         return values
 
     def _on_ok(self):
+        init_func_name = self.get_initial_function_name()
+        method_name = self.get_method_name()
+        values = self.get_params_values()
+
+        if values is None:
+            return
+
         for cb in self._on_ok_callbacks:
-            cb()
+            cb(init_func_name, method_name, values)
 
     def add_on_ok(self, cb):
         self._on_ok_callbacks.add(cb)
 
-    def remove_on_ok(self, cb):
-        self._on_ok_callbacks.remove(cb)
+    def add_on_close(self, cb):
+        self._master.protocol("WM_DELETE_WINDOW", cb)
 
-    @staticmethod
-    def run_loop():
-        tkinter.mainloop()
+    def run_loop(self):
+        self._master.mainloop()
+
+    def stop_loop(self):
+        self._master.destroy()
 
 
 @asyncio.coroutine

@@ -22,6 +22,6 @@ setup(
         'scipy>=0.16.0',
     ],
     scripts=[
-        "simulation_app.py",
+        "main.py",
     ],
 )
