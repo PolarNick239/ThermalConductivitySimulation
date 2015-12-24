@@ -22,4 +22,4 @@ addons:
 install:
   - pip install .
 
-script: nosetests
+script: nosetests --with-doctest
