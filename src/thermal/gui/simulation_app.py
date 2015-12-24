@@ -5,15 +5,13 @@
 
 import asyncio
 import logging
-import functools
-import numpy as np
 import cyglfw3 as glfw
 
-from thermal.gui.frames.plot2d import Plot2D
-from thermal.gui.helpers import FPSLimiter
-from thermal.simulation.processor import SimulationProcessor
-from thermal.simulation import initial_generators
 from thermal.utils import support
+from thermal.gui.helpers import FPSLimiter
+from thermal.gui.frames.plot2d import Plot2D
+from thermal.simulation import initial_generators
+from thermal.simulation.processor import SimulationProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +86,3 @@ class SimulationApp:
                 yield from self._paused
             yield from tics_limiter.ensure_frame_limit()
             # print('{:.1f} FPS'.format(tics_limiter.get_fps()))
-
-if __name__ == '__main__':
-    app = SimulationApp()
-    app.start()
-    asyncio.get_event_loop().run_forever()

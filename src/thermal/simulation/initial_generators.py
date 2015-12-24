@@ -43,3 +43,7 @@ def peak_function(n, i, peak_value=1, others_value=0, dtype=np.float32):
     xs[:] = others_value
     xs[i] = peak_value
     return xs
+
+
+def list_functions():
+    return ['linear_peak_function', 'step_function', 'peak_function']
