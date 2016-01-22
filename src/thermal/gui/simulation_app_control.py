@@ -51,6 +51,8 @@ class SimulationAppControl:
             row_num += 1
 
         for name, value in kwargs.items():
+            if value is None:
+                value = ''
             self._entries[name].insert(0, str(value))
             assert name in self._int_param_names + self._float_param_names + self._optional_float_param_names
 

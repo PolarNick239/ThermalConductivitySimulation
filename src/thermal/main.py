@@ -16,12 +16,12 @@ from thermal.utils.support import AsyncExecutor
 
 @asyncio.coroutine
 def _main():
-    initial_function = 'step_function'
+    initial_function = 'linear_peak_function'
     method = 'explicit_central'
     params = dict(n=100, iters=10,
-                  dx=0.01, dt=0.01, u=0.0, chi=0.0025,
+                  dx=0.01, dt=0.01, u=0.05, chi=0.0025,
                   view_dt=0.05,
-                  r='', s='')
+                  r=None, s=None)
 
     processor = SimulationProcessor()
     simulation = SimulationApp(processor)

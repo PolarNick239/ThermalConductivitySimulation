@@ -95,6 +95,7 @@ class SimulationApp:
             self._should_restart = False
             iters, n = self._params['iters'], self._params['n']
             dx, dt, u, chi = self._params['dx'], self._params['dt'], self._params['u'], self._params['chi']
+            s, r = self._params['s'], self._params['r']
 
             ts = self._initial_function(n, n // 2)
             self._plotter.set_ys(ts)
@@ -104,7 +105,7 @@ class SimulationApp:
             while not self._should_restart:
                 if self._paused is not None:
                     yield from self._paused
-                ts = yield from self._cpu_executor.map(self._processor.process, ts, dx=dx, dt=dt, u=u, chi=chi,
+                ts = yield from self._cpu_executor.map(self._processor.process, ts, dx=dx, dt=dt, u=u, chi=chi, s=s, r=r,
                                                        method_name=self._method_name, iters=iters)
                 self._plotter.set_ys(ts)
                 yield from self._tics_limiter.ensure_frame_limit()

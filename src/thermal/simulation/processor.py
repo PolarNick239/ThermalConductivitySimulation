@@ -15,7 +15,6 @@ from importlib import import_module
 
 from thermal.utils.cl import create_context
 
-
 logger = logging.getLogger(__name__)
 
 kernels_path = Path(pkg_resources.get_provider('thermal.simulation.kernels').get_resource_filename(__name__, '.'))
@@ -41,7 +40,8 @@ class SimulationProcessor:
                 source_code = f.readlines()
 
             logger.debug('Building kernels for \'{}\'...'.format(name))
-            self._cl_methods[name] = cl.Program(self._context, ''.join(source_code)).build(cache_dir=self._kernels_cache_dir)
+            self._cl_methods[name] = cl.Program(self._context, ''.join(source_code)).build(
+                cache_dir=self._kernels_cache_dir)
         logger.debug('OpenCL kernels for SimulationProcessor compiled: {}!'.format(sorted(self._cl_methods.keys())))
 
         for py_file in kernels_path.glob("*.py"):
@@ -68,8 +68,10 @@ class SimulationProcessor:
         n, iter_dt = len(ts), dt / iters
         if s is None:
             s = u * dt / dx
+            logger.debug('s = {}\t= u * dt / dx'.format(s))
         if r is None:
             r = chi * dt / (dx * dx)
+            logger.debug('r = {}\t= chi * dt / dx^2'.format(r))
 
         if method_name in self._py_methods:
             solve = self._py_methods[method_name]
@@ -94,10 +96,23 @@ class SimulationProcessor:
             ts_cl = cl.array.to_device(queue, ts)
         ts_res_cl = cl.array.zeros(queue, n, np.float32)
 
-        program.solve(queue, (n,), None,
-                      ts_cl.data, ts_res_cl.data,
-                      s, r, dx, iter_dt, u, chi,
-                      iters, n)
+        if method_name == 'explicit_leapfrog':
+            program.init(queue, (n,), None,
+                         ts_cl.data, ts_res_cl.data,
+                         s, r, dx, iter_dt, u, chi,
+                         n)
+            ts_prev_cl, ts_cl = ts_cl.copy(), ts_res_cl
+            for i in range(iters):
+                program.solve(queue, (n,), None,
+                              ts_prev_cl.data, ts_cl.data, ts_res_cl.data,
+                              s, r, dx, iter_dt, u, chi,
+                              n)
+                ts_prev_cl, ts_cl, ts_res_cl = ts_cl, ts_res_cl, ts_prev_cl
+        else:
+            program.solve(queue, (n,), None,
+                          ts_cl.data, ts_res_cl.data,
+                          s, r, dx, iter_dt, u, chi,
+                          n)
 
         ts_res = ts_res_cl.get()
         return ts_res

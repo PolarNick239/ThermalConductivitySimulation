@@ -8,7 +8,6 @@ __kernel void solve(__global const float * ts,
                                    float dt,
                                    float u,
                                    float chi,
-                                   int iters,
                                    int n
                     ) {
     int i = (int) get_global_id(0);
@@ -17,7 +16,5 @@ __kernel void solve(__global const float * ts,
         return;
     }
 
-    for (int iter = 0; iter < iters; ++iter) {
-        ts_res[i] = ts[i] * (1 + s - 2 * r) + (r - s) * ts[i + 1] + r * ts[i - 1];
-    }
+    ts_res[i] = ts[i] * (1 + s - 2 * r) + (r - s) * ts[i + 1] + r * ts[i - 1];
 }
